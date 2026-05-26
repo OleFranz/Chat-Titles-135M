@@ -60,37 +60,6 @@ def format_example(example: dict) -> dict:
 
     return {"text": text}
 
-def strip_default_system_template(chat_template: str) -> str:
-    start_token = "{% if loop.first and messages[0]['role'] != 'system' %}"
-    end_token = "{% endif %}"
-    if start_token not in chat_template:
-        return chat_template
-
-    prefix, rest = chat_template.split(start_token, 1)
-    if end_token not in rest:
-        return chat_template
-
-    _, suffix = rest.split(end_token, 1)
-    return prefix + suffix
-
-def patch_chat_template(output_dir: str) -> None:
-    template_path = os.path.join(output_dir, "chat_template.jinja")
-    if not os.path.exists(template_path):
-        print(f"Chat template not found at '{template_path}', skipping patch.")
-        return
-
-    with open(template_path, "r", encoding="utf-8") as template_file:
-        template = template_file.read()
-
-    patched = strip_default_system_template(template)
-    if patched == template:
-        print("Chat template already has no default system instruction.")
-        return
-
-    with open(template_path, "w", encoding="utf-8") as template_file:
-        template_file.write(patched)
-    print("Patched chat template to remove default system instruction.")
-
 dataset_dict = load_dataset(DATASET_NAME)
 split = dataset_dict["train"].train_test_split(test_size=VAL_SPLIT_RATIO, seed=42)
 
@@ -172,6 +141,5 @@ unsloth_train(trainer)
 
 model.save_pretrained(OUTPUT_DIR)
 tokenizer.save_pretrained(OUTPUT_DIR)
-patch_chat_template(OUTPUT_DIR)
 
 print(f"Training completed. Model saved to '{OUTPUT_DIR}'")
